@@ -5,8 +5,7 @@ Plugin URI: https://github.com/DirtySuds/Export-to-InDesign
 Description: Export a post as Adobe TaggedText for import to InDesign
 Author: Pat Hawks
 Author URI: http://pathawks.com
-License: GPLv2
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
+License: GPL2
 Version: 1.2.0
 
   Copyright 2014 Pat Hawks  (email : pat@pathawks.com)
@@ -45,7 +44,7 @@ function dirtysuds_export_html_box_inner($post, $metabox) {
 		'<a class="button" style="margin-top:-4px;float:right" target="_blank" href="',
 		get_permalink($post),'?export=print">Print</a>',
 		'<a class="button" href="',
-		get_permalink($post),'?export=taggedtext">Export to InDesign</a>';
+		get_permalink($post),'?export=taggedtext">Export 2 InDesign</a>';
 
 //	echo '<a href="#post_status" style="margin:16px 0 0;display:block">Options</a>';
 

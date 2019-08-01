@@ -12,13 +12,27 @@ if ($options['outputFormat']=='<ANSI-MAC>')
 else
 	$newLine            = "\x0d\x0a";
 
-$NormalParagraphStyle = 'NormalParagraphStyle';
+if ($options['Font'])
+	$Font_name = $options['Font'];
+else
+	$Font_name = 'Times New Roman';
+
+if ($options['Size_Font'])
+	$Size_Font = $options['Size_Font'];
+else
+	$Size_Font = '10';
+
+if ($options['NormalParagraphStyle'])
+	$NormalParagraphStyle = $options['NormalParagraphStyle'];
+else
+	$NormalParagraphStyle = 'NormalParagraphStyle';
+
 $defineStyles =
 '<DefineParaStyle:'.
 $NormalParagraphStyle.
 '=<Nextstyle:'.$NormalParagraphStyle.'>'.
-'<cColor:Registration><cSize:10><cLeading:11>'.
-'<pFirstLineIndent:12><cFont:Times New Roman>'.
+'<cColor:Registration><cSize:'.$Size_Font.'><cLeading:11>'.
+'<pFirstLineIndent:12><cFont:'.$Font_name.'>'.
 '>';
 
 function dirtysuds_content_taggedtext(){
@@ -355,13 +369,17 @@ function dirtysuds_content_taggedtext(){
 		'&diams;'    => '<0x2666>',
 	);
 
-	$html_tags = array(
+	$html_tags1 = array(
 		'/&(#60|lt);/',
 		'/&(#62|gt);/',
 		'/&#(#62);/',
 		'/[\n\r\f]+/',
-		'/&#[xX]([0-9A-Fa-f]{4})\;/e',
-		'/&#([0-9]+)\;/e',
+	);
+
+//		'/&#[xX]([0-9A-Fa-f]{4})\;/e',
+//		'/&#([0-9]+)\;/e',
+	
+	$html_tags2 = array(
 		'/([\n\r\f]*<p>|<br[\s\/]*>[\s\t\n\r\f]+|[\s\t]*[\n\r\f]+[\s\t]*)/',
 		'/&(#60|lt);/',
 		'/&#61;/',
@@ -369,18 +387,24 @@ function dirtysuds_content_taggedtext(){
 		'/([\ ]|&nbsp;)+/',
 		'/[\t]+[\ \t]*/',
 		'/[\n\r\f]+/',
-		'/\xc4([\x80-\xff])/e',
-		'/\xc5([\x40-\xff])/e',
-		'/&([A-Za-z]+)\;/e',
 	);
 
-	$tagged_tags = array(
+//		'/\xc4([\x80-\xff])/e',
+//		'/\xc5([\x40-\xff])/e',
+//		'/&([A-Za-z]+)\;/e',
+
+
+	$tagged_tags1 = array(
 		'<',
 		'>',
 		'&',
 		$newLine,
-		"'<0x'.$1.'>'",
-		"'<0x'.str_pad(dechex($1),4,'0',STR_PAD_LEFT).'>'",
+	);
+
+//		"'<0x'.$1.'>'",
+//		"'<0x'.str_pad(dechex($1),4,'0',STR_PAD_LEFT).'>'",
+
+	$tagged_tags2 = array(
 		"<p>",
 		'\\<',
 		' ',
@@ -388,10 +412,11 @@ function dirtysuds_content_taggedtext(){
 		' ',
 		chr(9),
 		$newLine,
-		"'<0x'.str_pad(dechex(ord($1) +  128),4,'0',STR_PAD_LEFT).'>'",
-		"'<0x'.str_pad(dechex(ord($1) +  192),4,'0',STR_PAD_LEFT).'>'",
-		"'<0x'.str_pad(dechex(ord(html_entity_decode('&'.$1.';')),4,'0',STR_PAD_LEFT).'>'",
 	);
+
+//		"'<0x'.str_pad(dechex(ord($1) +  128),4,'0',STR_PAD_LEFT).'>'",
+//		"'<0x'.str_pad(dechex(ord($1) +  192),4,'0',STR_PAD_LEFT).'>'",
+//		"'<0x'.str_pad(dechex(ord(html_entity_decode('&'.$1.';')),4,'0',STR_PAD_LEFT).'>'",
 
 	remove_all_filters('loop_end');
 
@@ -417,8 +442,63 @@ function dirtysuds_content_taggedtext(){
 
 	$content = strtr($content,$trickyCharacters);
 
-	$content = preg_replace($html_tags,$tagged_tags,$content);
+	$content = preg_replace($html_tags1,$tagged_tags1,$content);
 
+	/* los 2 primeros
+htmlo_tags
+//		'/&#[xX]([0-9A-Fa-f]{4})\;/e',
+//		'/&#([0-9]+)\;/e',
+tagged_tags
+//		"'<0x'.$1.'>'",
+//		"'<0x'.str_pad(dechex($1),4,'0',STR_PAD_LEFT).'>'",
+*/
+	$content = preg_replace_callback(
+		'/&#[xX]([0-9A-Fa-f]{4})\;/',
+		function ($matches) {
+			return '<0x'.$matches[1].'>';
+		},
+		$content);
+
+	$content = preg_replace_callback(
+		'/&#([0-9]+)\;/',
+		function ($matches) {
+			return '<0x'.str_pad(dechex($matches[1]),4,'0',STR_PAD_LEFT).'>';
+		},
+		$content);
+	
+	$content = preg_replace($html_tags2,$tagged_tags2,$content);
+
+	/* los 3 ultimos
+html_tags
+//		'/\xc4([\x80-\xff])/e',
+//		'/\xc5([\x40-\xff])/e',
+//		'/&([A-Za-z]+)\;/e',
+tagged_tags
+//		"'<0x'.str_pad(dechex(ord($1) +  128),4,'0',STR_PAD_LEFT).'>'",
+//		"'<0x'.str_pad(dechex(ord($1) +  192),4,'0',STR_PAD_LEFT).'>'",
+//		"'<0x'.str_pad(dechex(ord(html_entity_decode('&'.$1.';')),4,'0',STR_PAD_LEFT).'>'",
+*/
+	$content = preg_replace_callback(
+		'/\xc4([\x80-\xff])/',
+		function ($matches) {
+			return '<0x'.str_pad(dechex(ord($matches[1]) +  128),4,'0',STR_PAD_LEFT).'>';
+		},
+		$content);
+
+	$content = preg_replace_callback(
+		'/\xc5([\x40-\xff])/',
+		function ($matches) {
+			return '<0x'.str_pad(dechex(ord($matches[1]) +  192),4,'0',STR_PAD_LEFT).'>';
+		},
+		$content);
+
+	$content = preg_replace_callback(
+	'/&([A-Za-z]+)\;/',
+	function ($matches) {
+		return '<0x'.str_pad(dechex(ord(html_entity_decode('&'.$matches[1].';'))),4,'0',STR_PAD_LEFT).'>';
+	},
+	$content);
+	
 	$content = strtr($content,$conversion_table);
 
 /*
@@ -461,7 +541,8 @@ header('Content-type: binary/text; charset=utf-8');
 // We need to give the file some sort of name. In this case, the author's last name and the title of the story
 // Don't forget to strip the spaces out. This makes it more compatible cross browser
 
-header('Content-Disposition: filename='.preg_replace("/[^a-zA-Z0-9\-_]/", "",get_the_author_lastname().'-'.str_replace(' ','_',basename(get_permalink()))).'.txt;');
+header('Content-Disposition: filename='.preg_replace("/[^a-zA-Z0-9\-_]/", "",get_the_author_meta('last_name').'-'.str_replace(' ','_',basename(get_permalink()))).'.txt;');
+
 
 echo
 	$outputFormat.$newLine.
